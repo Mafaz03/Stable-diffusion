@@ -40,7 +40,7 @@ class CLIPlayer(nn.Module):
         x = self.layer_norm_2(x)
         x = self.layer_1(x)
 
-        x = x * torch.sigmoid(1.702 * x) #geky relu
+        x = x * torch.sigmoid(1.702 * x) # QuickGelu
         x = self.layer_2(x)
         x += residual
 
