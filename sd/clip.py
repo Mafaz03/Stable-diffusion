@@ -39,18 +39,18 @@ class CLIPlayer(nn.Module):
         residual = x
         x = self.layer_norm_2(x)
         x = self.layer_1(x)
-        x = x * torch.sigmoid(1.702 * x)
+
+        x = x * torch.sigmoid(1.702 * x) #geky relu
         x = self.layer_2(x)
         x += residual
 
         return x
 
 
-
 class CLIP(nn.Module):
     def __init__(self):
         super().__init__()
-        self.embedding = CLIPembedding(49408, 768, 77)
+        self.embedding = CLIPembedding(n_vocab=49408, n_embed=768, n_token=77)
 
         self.layers = nn.ModuleList([
             CLIPlayer(12, 768) for i in range(12)
