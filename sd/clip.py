@@ -72,8 +72,9 @@ class CLIP(nn.Module):
 
 ## Testing
 if __name__ == "__main__":
+    print("CLIP test: ")
     tokens = torch.rand(1,77)
 
     clip = CLIP()
     result = clip(tokens)
-    print(result.shape)
+    print(result.shape) # [1, 77, 768]

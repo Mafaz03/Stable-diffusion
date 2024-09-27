@@ -45,3 +45,61 @@ class SelfAttention(nn.Module):
 
         # (n, seq, Dim)
         return output
+    
+class CrossAttention(nn.Module):
+    def __init__(self, n_heads, d_embed, d_context, inprojbias = True, outprojbias = True):
+        super().__init__()
+
+        self.q_proj = nn.Linear(d_embed, d_embed, bias = inprojbias)
+        self.k_proj = nn.Linear(d_context, d_embed, bias = inprojbias)
+        self.v_proj = nn.Linear(d_context, d_embed, bias = inprojbias)
+        
+        self.outproj = nn.Linear(d_embed, d_embed, bias = outprojbias)
+        self.n_heads = n_heads
+        self.d_head = d_embed // n_heads
+
+    def forward(self, x: torch.Tensor, y: torch.Tensor):
+        # x: (latent): (batch_size, seq_length, dimentions (channels))
+        # y: (batch_size, seq_length_KV, dimentions_KV): (batch_size, 77, 768)
+
+        input_shape = x.shape
+        batch_size, seq_len, d_embed = input_shape
+
+        interm_shape = (batch_size, -1, self.n_heads, self.d_head) # (batch_size, seq, heads, Dim/heads)
+
+        q_proj = self.q_proj(x)
+        k_proj = self.k_proj(y)
+        v_proj = self.v_proj(y)
+
+        q = q_proj.view(interm_shape).transpose(1, 2) # (batch_size, heads, seq, Dim/heads)
+        k = k_proj.view(interm_shape).transpose(1, 2) # (batch_size, heads, seq, Dim/heads)
+        v = v_proj.view(interm_shape).transpose(1, 2) # (batch_size, heads, seq, Dim/heads)
+
+        # (batch_size, heads, seq, Dim/heads) x (batch_size, heads, Dim/heads, seq)
+        weight = q @ k.transpose(-1, -2) # (batch_size, heads, seq, seq)
+        weight /= math.sqrt(self.d_head)
+        weight = F.softmax(weight, dim=-1)
+
+        # (batch_size, heads, seq, seq) x (batch_size, heads, seq, Dim/heads)
+        output = weight @ v # (batch_size, heads, seq, Dim/heads)
+
+        output = output.transpose(1, 2) # (batch_size, seq, heads, Dim/heads)
+        output = output.reshape(input_shape)
+
+        output = self.outproj(x)
+
+        return output
+
+## Testing
+
+if __name__ == "__main__":
+    print("Testing Self Attention Block: ")
+    self_attention = SelfAttention(8, 256)
+    result = self_attention(torch.rand(4, 256, 256))
+    print(result.shape)
+
+    print("\nTesting Cross Attention Block: ")
+    corss_attention = CrossAttention(8, 768, 256)
+    result = corss_attention(torch.rand(4, 768, 768), torch.rand(4, 768, 768))
+    print(result.shape)
+

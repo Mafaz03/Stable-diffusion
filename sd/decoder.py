@@ -119,11 +119,6 @@ if __name__ == "__main__":
     result = vae_residual(x)
     print(result.shape)
 
-    x = torch.rand(1, 128, 128, 128)
-    vae_residual = VAE_ResidualBlock(128, 256)
-    result = vae_residual(x)
-    print(result.shape)
-
     print("\nSelf Attention Block Test: ")
     x = torch.rand(4, 256, 16, 16)
     self_attention = VAE_AttentionBlock(256)
