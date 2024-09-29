@@ -51,7 +51,7 @@ def generator(prompt: str, uncond_promt: str, input_image=None, strenght: int = 
 
         if sampler_name == "ddpm":
             sampler = DDPMSampler(generator)
-            sampler.set_inference_steps(n_inference_steps)
+            sampler.set_inference_timesteps(n_inference_steps)
         else: raise ValueError(f"Unkown Sampler {sampler_name}")
 
         latent_shape = (1, 4, LATENT_HEIGHT, LATENT_WIDTH)
@@ -83,7 +83,7 @@ def generator(prompt: str, uncond_promt: str, input_image=None, strenght: int = 
         timesteps = tqdm(sampler.timestep)
 
         for i, timestep in enumerate(timesteps):
-            time_embedding = get_time_embedding(timestep).to(device)
+            time_embedding = get_time_embedding(timestep).to(device) # (1, 320)
 
             model_input = latent
 
@@ -120,3 +120,10 @@ def rescale(image, old_range, new_range, clamp=False):
     if clamp:
         image.clamp(new_min, new_max)
     return image
+
+def get_time_embedding(timestep):
+    # (160)
+    freq = torch.pow(10000, -torch.arange(start=0, end=160, dtype=torch.float32) / 160) # (160)
+    x = torch.tensor([timestep], dtype=torch.float32)[:, None] * freq[None] # (1, 160)
+    return torch.cat(torch.cos(x), torch.sin(x), dim=-1) # (1, 320)
+
