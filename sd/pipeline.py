@@ -73,13 +73,50 @@ def generator(prompt: str, uncond_promt: str, input_image=None, strenght: int = 
             sampler.add_noise(latent, sampler.timesteps[0])
 
             to_idle(encoder)
-
         else:
+            # if text to image
             latent = torch.rand(latent_shape, generator=generator, device=device)
+        
+        diffusion = models["diffusion"]
+        diffusion.to(device)
 
+        timesteps = tqdm(sampler.timestep)
 
+        for i, timestep in enumerate(timesteps):
+            time_embedding = get_time_embedding(timestep).to(device)
 
+            model_input = latent
 
+            if do_cfg:
+                # (batch_size, channels, height, width)
+                model_input = model_input.repeat(2, 1, 1, 1) # (2 * batch_size, channels, height, width)
 
+            model_output = diffusion(model_input, context, time_embedding)
+             
+            if do_cfg:
+                model_output_cond, model_output_uncond = model_output.chunk(2, dim = 0)
+                model_output = cfg_scale * (model_output_cond-model_output_uncond) + model_output_uncond
+            
+            latent = sampler.step(timestep, latent, model_output)
+        
+        to_idle(diffusion)
 
+        decoder = models["diffusion"].to(device)
+        images = decoder(latent)
+        to_idle(decoder)
 
+        images = rescale(images, (-1, 1), (0, 255), clamp=True)
+        images = images.permute(0, 2, 3, 1)
+        images = images.to("cpu").numpy()
+        return images[0]
+    
+def rescale(image, old_range, new_range, clamp=False):
+    old_min, old_max = old_range
+    new_min, new_max = new_range
+
+    image -= old_min
+    image += (new_max-new_min)/ (old_max-old_min)
+    image += new_min
+    if clamp:
+        image.clamp(new_min, new_max)
+    return image
