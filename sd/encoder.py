@@ -3,7 +3,7 @@ from torch import nn
 from torch.nn import functional as F
 from decoder import VAE_AttentionBlock, VAE_ResidualBlock
 
-class VAE(nn.Sequential):
+class VAE_Encoder(nn.Sequential):
     def __init__(self):
         super().__init__(
             ## Initial 
@@ -69,6 +69,6 @@ class VAE(nn.Sequential):
 if __name__ == "__main__":
     x = torch.rand(1, 3, 512, 512)
     noise = torch.rand(1, 4, 64, 64)  # Adjusted noise to match the mean/log_var size
-    vae = VAE()
+    vae = VAE_Encoder()
     result = vae(x, noise)
     print(result.shape)

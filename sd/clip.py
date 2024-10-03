@@ -8,7 +8,7 @@ class CLIPembedding(nn.Module):
         super().__init__()
 
         self.token_embedding = nn.Embedding(n_vocab, n_embed)
-        self.positioning_embed = nn.Parameter(torch.zeros(n_token, n_embed))
+        self.position_embedding = nn.Parameter(torch.zeros(n_token, n_embed))
 
 
     def forward(self, tokens):
@@ -16,7 +16,7 @@ class CLIPembedding(nn.Module):
         # (batch_size, seq_len) -> (batch_size, seq_len, dim)
         x = self.token_embedding(tokens) 
 
-        x += self.positioning_embed # (batch_size, seq_len, dim)
+        x += self.position_embedding # (batch_size, seq_len, dim)
 
         return x
     
@@ -24,24 +24,24 @@ class CLIPlayer(nn.Module):
     def __init__(self, n_heads: int, n_embed: int):
         super().__init__()
 
-        self.layer_norm_1 = nn.LayerNorm(n_embed)
+        self.layernorm_1 = nn.LayerNorm(n_embed)
         self.attention = SelfAttention(n_heads, n_embed)
-        self.layer_norm_2 = nn.LayerNorm(n_embed)
-        self.layer_1 = nn.Linear(n_embed, n_embed * 4)
-        self.layer_2 = nn.Linear(n_embed * 4, n_embed)
+        self.layernorm_2 = nn.LayerNorm(n_embed)
+        self.linear_1 = nn.Linear(n_embed, n_embed * 4)
+        self.linear_2 = nn.Linear(n_embed * 4, n_embed)
 
     def forward(self, x: torch.Tensor):
         residual = x
-        x = self.layer_norm_1(x)
-        x = self.attention(x, casual_mask=True)
+        x = self.layernorm_1(x)
+        x = self.attention(x, causal_mask=True)
         x += residual
 
         residual = x
-        x = self.layer_norm_2(x)
-        x = self.layer_1(x)
+        x = self.layernorm_2(x)
+        x = self.linear_1(x)
 
         x = x * torch.sigmoid(1.702 * x) # QuickGelu
-        x = self.layer_2(x)
+        x = self.linear_2(x)
         x += residual
 
         return x
@@ -56,7 +56,7 @@ class CLIP(nn.Module):
             CLIPlayer(12, 768) for i in range(12)
         ])
 
-        self.layer_norm = nn.LayerNorm(768)
+        self.layernorm = nn.LayerNorm(768)
 
     def forward(self, tokens: torch.LongTensor):
         
@@ -66,7 +66,7 @@ class CLIP(nn.Module):
         for layer in self.layers: 
             # (Batch_Size, Seq_Len, Dim) -> (Batch_Size, Seq_Len, Dim)
             state = layer(state)
-        output = self.layer_norm(state)
+        output = self.layernorm(state)
         
         return output # (Batch_Size, Seq_Len, Dim)
 
