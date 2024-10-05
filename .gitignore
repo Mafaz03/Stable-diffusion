@@ -2,3 +2,5 @@
 data/v1-5-pruned-emaonly.ckpt
 data/train_1.pth
 .venv
+*.ckpt
+*.pt
