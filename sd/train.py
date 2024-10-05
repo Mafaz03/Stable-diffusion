@@ -16,6 +16,7 @@ from pipeline import get_time_embedding
 from transformers import CLIPTokenizer
 from torch.nn import functional as F
 from diffusers.optimization import get_cosine_schedule_with_warmup
+import gc
 
 
 from diffusion import Diffusion
@@ -124,5 +125,9 @@ for epoch in range(config.EPOCHS):
         # Update global step
         global_step += 1
 
+    # CUDA out of memory, trying to tackle
+    gc.collect()
+    torch.cuda.empty_cache()
+
     if (epoch + 1) % config.SAVE_MODEL_EPOCHS == 0 or epoch == config.EPOCHS - 1:
-        torch.save(diffusion.state_dict(), "data/diffusion.pth")
+        torch.save(diffusion.state_dict(), config.OUTPUT_DIR)
