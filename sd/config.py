@@ -1,4 +1,5 @@
 from torchvision import transforms
+import torch
 
 IMAGE_SIZE = 64
 LATENT_SIZE = IMAGE_SIZE//8
@@ -10,11 +11,13 @@ GRADIENT_ACCUMULATION_STEPS = 1
 LEARNING_RATE = 1e-4
 LR_WARMUP_STEPS = 500
 SAVE_IMAGE_EPOCHS = 10
-SAVE_MODEL_EPOCHS = 30
+SAVE_MODEL_EPOCHS = 10
 MIXED_PRECISION = "fp16"
 OUTPUT_DIR = "data/train_1.pth"
 OVERWRITE_OUTPUT_DIR = True
 SEED = 0
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+IDLE_DEVICE = "cpu"
 
 
 initial_transforms = transforms.Compose([
