@@ -1,7 +1,9 @@
 import torch
 from torch import nn
+import torch.amp
 from torch.nn import functional as F
 from attention import SelfAttention
+from torch.cuda.amp import autocast
 
 class VAE_AttentionBlock(nn.Module):
     def __init__(self, channels):
@@ -166,7 +168,7 @@ class VAE_Decoder(nn.Sequential):
 
     def forward(self, x):
         # x: (Batch_Size, 4, Height / 8, Width / 8)
-        
+        # with torch.amp.autocast("cpu"):
         # Remove the scaling added by the Encoder.
         x /= 0.18215
 
@@ -178,20 +180,21 @@ class VAE_Decoder(nn.Sequential):
 
 ## Testing
 if __name__ == "__main__":
-    print("Residual Block Test: ")
-    x = torch.rand(1, 128, 128, 128)
-    vae_residual = VAE_ResidualBlock(128, 128)
-    result = vae_residual(x)
-    print(result.shape)
+    # print("Residual Block Test: ")
+    # x = torch.rand(1, 128, 128, 128)
+    # vae_residual = VAE_ResidualBlock(128, 128)
+    # result = vae_residual(x)
+    # print(result.shape)
 
-    print("\nSelf Attention Block Test: ")
-    x = torch.rand(4, 256, 16, 16)
-    self_attention = VAE_AttentionBlock(256)
-    result = self_attention(x)
-    print(result.shape)
+    # print("\nSelf Attention Block Test: ")
+    # x = torch.rand(4, 256, 16, 16)
+    # self_attention = VAE_AttentionBlock(256)
+    # result = self_attention(x)
+    # print(result.shape)
 
     print("\n VAE Decoder test: ")
-    x = torch.rand(1, 4, 64, 64)
+    # with torch.amp.autocast("cpu"):
+    x = torch.rand(4, 4, 8, 8)
     decoder = VAE_Decoder()
     result = decoder(x)
     print(result.shape)

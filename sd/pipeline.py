@@ -2,11 +2,13 @@ import torch
 import numpy as np
 from tqdm import tqdm
 from ddpm import DDPMSampler
+import config
 
-WIDTH = 512
-HEIGHT = 512
-LATENTS_WIDTH = WIDTH // 8
-LATENTS_HEIGHT = HEIGHT // 8
+widht = 512
+height = 512
+
+LATENTS_WIDTH = widht // 8
+LATENTS_HEIGHT = height // 8
 
 def generate(
     prompt,
@@ -22,7 +24,11 @@ def generate(
     device=None,
     idle_device=None,
     tokenizer=None,
+    width = widht,
+    height = height
 ):
+
+    
     with torch.no_grad():
         if not 0 < strength <= 1:
             raise ValueError("strength must be between 0 and 1")
@@ -84,7 +90,7 @@ def generate(
             encoder = models["encoder"]
             encoder.to(device)
 
-            input_image_tensor = input_image.resize((WIDTH, HEIGHT))
+            input_image_tensor = input_image.resize((widht, height))
             # (Height, Width, Channel)
             input_image_tensor = np.array(input_image_tensor)
             # (Height, Width, Channel) -> (Height, Width, Channel)
@@ -104,7 +110,7 @@ def generate(
             # Add noise to the latents (the encoded input image)
             # (Batch_Size, 4, Latents_Height, Latents_Width)
             sampler.set_strength(strength=strength)
-            latents = sampler.add_noise(latents, sampler.timesteps[0])
+            _, latents = sampler.add_noise(latents, sampler.timesteps[0])
 
             to_idle(encoder)
         else:
@@ -115,6 +121,7 @@ def generate(
         diffusion.to(device)
 
         timesteps = tqdm(sampler.timesteps)
+
         for i, timestep in enumerate(timesteps):
             # (1, 320)
             time_embedding = get_time_embedding(timestep).to(device)

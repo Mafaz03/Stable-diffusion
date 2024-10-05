@@ -116,7 +116,35 @@ class DDPMSampler:
         # here mu = sqrt_alpha_prod * original_samples and sigma = sqrt_one_minus_alpha_prod
         noise = torch.randn(original_samples.shape, generator=self.generator, device=original_samples.device, dtype=original_samples.dtype)
         noisy_samples = sqrt_alpha_prod * original_samples + sqrt_one_minus_alpha_prod * noise
-        return noisy_samples
+        return noise, noisy_samples
+    
+    def remove_noise(
+        self,
+        noisy_samples: torch.FloatTensor,
+        predicted_noise: torch.FloatTensor,
+        timesteps: torch.IntTensor,
+    ) -> torch.FloatTensor:
+        
+        # Move alpha values to the same device as the noisy samples
+        alphas_cumprod = self.alphas_cumprod.to(device=noisy_samples.device, dtype=noisy_samples.dtype)
+        timesteps = timesteps.to(noisy_samples.device)
+        
+        # Calculate the square root of alpha product for the current timestep
+        sqrt_alpha_prod = alphas_cumprod[timesteps] ** 0.5
+        sqrt_alpha_prod = sqrt_alpha_prod.flatten()
+        while len(sqrt_alpha_prod.shape) < len(noisy_samples.shape):
+            sqrt_alpha_prod = sqrt_alpha_prod.unsqueeze(-1)
+
+        # Calculate the square root of (1 - alpha product) for the current timestep
+        sqrt_one_minus_alpha_prod = (1 - alphas_cumprod[timesteps]) ** 0.5
+        sqrt_one_minus_alpha_prod = sqrt_one_minus_alpha_prod.flatten()
+        while len(sqrt_one_minus_alpha_prod.shape) < len(noisy_samples.shape):
+            sqrt_one_minus_alpha_prod = sqrt_one_minus_alpha_prod.unsqueeze(-1)
+
+        # Reverse the noise process by subtracting the noise term and dividing by sqrt_alpha_prod
+        clean_samples = (noisy_samples - sqrt_one_minus_alpha_prod * predicted_noise) / sqrt_alpha_prod
+        
+        return clean_samples
 
         
 ## Testing

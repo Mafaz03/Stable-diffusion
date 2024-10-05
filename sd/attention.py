@@ -66,12 +66,14 @@ class CrossAttention(nn.Module):
         batch_size, seq_len, d_embed = input_shape
 
         interm_shape = (batch_size, -1, self.n_heads, self.d_head) # (batch_size, seq, heads, Dim/heads)
+        # print(interm_shape)
 
         q_proj = self.q_proj(x)
         k_proj = self.k_proj(y)
         v_proj = self.v_proj(y)
 
         q = q_proj.view(interm_shape).transpose(1, 2) # (batch_size, heads, seq, Dim/heads)
+        # print(k_proj)
         k = k_proj.view(interm_shape).transpose(1, 2) # (batch_size, heads, seq, Dim/heads)
         v = v_proj.view(interm_shape).transpose(1, 2) # (batch_size, heads, seq, Dim/heads)
 
