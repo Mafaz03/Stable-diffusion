@@ -28,7 +28,7 @@ noise_scheduler = DDPMSampler(generator=generator)
 print("DDPM model successfully initialised!")
 
 clip = CLIP().to(config.DEVICE)
-print("CLIP model successfully Loaded")
+print("CLIP model successfully loaded!")
 
 
 state_dict = model_converter.load_from_standard_weights("data/v1-5-pruned-emaonly.ckpt", config.DEVICE)
@@ -36,15 +36,15 @@ state_dict = model_converter.load_from_standard_weights("data/v1-5-pruned-emaonl
 # Initialize the decoder
 decoder = VAE_Decoder().to(config.DEVICE)
 decoder.load_state_dict(state_dict['decoder'], strict=True)
-print("Decoder model successfully Loaded")
+print("Decoder model successfully loaded!")
 
 # Initialize the encoder
 encoder = VAE_Encoder().to()
 encoder.load_state_dict(state_dict['encoder'], strict=True)  # This should load into the encoder
-print("Encoder model successfully Loaded")
+print("Encoder model successfully loaded!")
 
 tokenizer = CLIPTokenizer("data/vocab.json", merges_file="data/merges.txt")
-print("Tokensizer successfully Loaded")
+print("Tokensizer successfully loaded!")
 
 train_ds = ImageDataset("sd/dataset/Train", initial_transforms, "sd/dataset/discription.json")
 train_dl = DataLoader(train_ds, batch_size=config.TRAIN_BATCH_SIZE, shuffle=True)
@@ -74,12 +74,13 @@ for epoch in range(config.EPOCHS):
 
     for step, batch in enumerate(train_dl):
         clean_images = batch[0] # for now, didnt add the text description to images yet
+        clean_images = clean_images.to(config.DEVICE) 
         timestep = torch.randint(0, noise_scheduler.num_train_timesteps, (1,), device=clean_images.device) # One time step constant for each batch
 
         bs = clean_images.shape[0]
         latents_shape = (bs, 4, config.LATENT_SIZE, config.LATENT_SIZE)
 
-        input_image_tensor = rescale(clean_images, (0, 255), (-1, 1))
+        input_image_tensor = rescale(clean_images, (0, 255), (-1, 1)).to(clean_images.device.type)
 
         encoder_noise = torch.randn(latents_shape, generator=generator, device=clean_images.device)
         latents = encoder(input_image_tensor, encoder_noise)
@@ -100,6 +101,8 @@ for epoch in range(config.EPOCHS):
         loss = loss / config.GRADIENT_ACCUMULATION_STEPS
 
         loss.backward()
+
+        clean_images = clean_images.to(config.IDLE_DEVICE)
 
         # Perform optimizer step only after accumulating enough gradients
         if (step + 1) % config.GRADIENT_ACCUMULATION_STEPS == 0 or (step + 1) == len(train_dl):
