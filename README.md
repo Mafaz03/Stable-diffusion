@@ -1,1 +1,1 @@
-### Currently getting "CUDA out of memory" in Train_colab.py
+### Currently getting "CUDA out of memory" in sd/Train_colab.py
